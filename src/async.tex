@@ -549,8 +549,7 @@ If the initiating function is not a member function, the associated executor is 
 \end{itemize}
 
 \pnum
-Let \tcode{Executor1} be the type of the associated executor. Let \tcode{ex1} be a value of type \tcode{Executor1}, representing the associated executor object obtained as described above.
-
+Let \tcode{Executor1} be the type of the associated executor. Let \tcode{ex1} be a value of type \tcode{Executor1}, representing the associated executor object obtained as described above. \tcode{execution::can_query_v<Executor1, execution::context_t>} shall be \tcode{true}, and \tcode{execution::query(ex1, execution::context_t)} shall yield a value of type \tcode{execution_context&} or of type \tcode{E&}, where \tcode{E} satisifies the \tcode{ExecutionContext}~(\ref{async.reqmts.executioncontext}) requirements.
 
 
 \rSec3[async.reqmts.async.handler.exec]{Completion handler executor}
@@ -565,6 +564,7 @@ Let \tcode{Executor2} be the type
 \tcode{associated_executor_t<CompletionHandler, Executor1>}.
 Let \tcode{ex2} be a value of type \tcode{Executor2}
 obtained by performing \tcode{get_associated_executor(completion_handler, ex1)}.
+\tcode{execution::can_query_v<Executor2, execution::context_t>} shall be \tcode{true}, and \tcode{execution::query(ex2, execution::context_t)} shall yield a value of type \tcode{execution_context&} or of type \tcode{E&}, where \tcode{E} satisifies the \tcode{ExecutionContext}~(\ref{async.reqmts.executioncontext}) requirements.
 
 
 
@@ -576,10 +576,10 @@ Until the asynchronous operation has completed, the asynchronous operation shall
 
 \begin{itemize}
 \item
-an object \tcode{work1} of type \tcode{executor_work_guard<Executor1>}, initialized as \tcode{work1(ex1)}, and where \tcode{work1.owns_work() == true}; and
+an executor object \tcode{work1}, initialized as \tcode{execution::prefer(ex1, execution::outstanding_work)}; and
 
 \item
-an object \tcode{work2} of type \tcode{executor_work_guard<Executor2>}, initialized as \tcode{work2(ex2)}, and where \tcode{work2.owns_work() == true}.
+an executor object \tcode{work2}, initialized as \tcode{execution::prefer(ex2, execution::outstanding_work)}.
 \end{itemize}
 
 
@@ -620,7 +620,18 @@ Let \tcode{Args...} be the argument types of the completion signature \tcode{Sig
 Let \tcode{f} be a function object, callable as \tcode{f()}, that invokes \tcode{completion_handler} as if by \tcode{completion_handler(forward<T$_0$>(t$_0$), ..., forward<T$_{N-1}$>(t$_{N-1}$))}.
 
 \pnum
-If an asynchronous operation completes immediately (that is, within the thread of execution calling the initiating function, and before the initiating function returns), the completion handler shall be submitted for execution as if by performing \tcode{ex2.post(std::move(f), alloc2)}. Otherwise, the completion handler shall be submitted for execution as if by performing \tcode{ex2.dispatch(std::move(f), alloc2)}.
+If an asynchronous operation completes immediately (that is, within the thread of execution calling the initiating function, and before the initiating function returns), the completion handler shall be submitted for execution as if by performing:
+\begin{codeblock}
+execution::prefer(
+  execution::require(ex2, execution::oneway, execution::single, execution::never_blocking),
+    execution::allocator(alloc2)).execute(std::move(f));
+\end{codeblock}
+Otherwise, the completion handler shall be submitted for execution as if by performing:
+\begin{codeblock}
+execution::prefer(
+  execution::require(work2, execution::oneway, execution::single),
+    execution::possibly_blocking, execution::allocator(alloc2)).execute(std::move(f));
+\end{codeblock}
 
 
 
@@ -2779,7 +2790,7 @@ inline namespace v1 {
 \end{codeblock}
 
 \pnum
-\tcode{strand<Executor>} satisfies the \tcode{Executor}~(\ref{async.reqmts.executor}) requirements.
+\tcode{strand<Executor>} satisfies the OneWayExecutor requirements (P0443R5).
 
 \pnum
  A strand provides guarantees of ordering and non-concurrency. Given:
