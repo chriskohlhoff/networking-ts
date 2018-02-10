@@ -96,11 +96,8 @@ inline namespace v1 {
     executor_binder<decay_t<T>, typename ExecutionContext::executor_type>
       bind_executor(ExecutionContext& ctx, T&& t);
 
-  class system_executor;
   class system_context;
-
-  bool operator==(const system_executor&, const system_executor&);
-  bool operator!=(const system_executor&, const system_executor&);
+  using system_executor = system_context::executor_type;
 
   class bad_executor;
 
@@ -1738,129 +1735,11 @@ template<class ExecutionContext, class CompletionToken>
 
 
 
-\rSec1[async.system.exec]{Class \tcode{system_executor}}
-
-\indexlibrary{\idxcode{system_executor}}%
-\pnum
-Class \tcode{system_executor} represents a set of rules where function objects are permitted to execute on any thread.
-
-\begin{codeblock}
-namespace std {
-namespace experimental {
-namespace net {
-inline namespace v1 {
-
-  class system_executor
-  {
-  public:
-    // constructors:
-
-    system_executor() {}
-
-    // \ref{async.system.exec.ops}, executor operations:
-
-    system_context& context() const noexcept;
-
-    void on_work_started() const noexcept {}
-    void on_work_finished() const noexcept {}
-
-    template<class Func, class ProtoAllocator>
-      void dispatch(Func&& f, const ProtoAllocator& a) const;
-    template<class Func, class ProtoAllocator>
-      void post(Func&& f, const ProtoAllocator& a) const;
-    template<class Func, class ProtoAllocator>
-      void defer(Func&& f, const ProtoAllocator& a) const;
-  };
-
-  bool operator==(const system_executor&, const system_executor&) noexcept;
-  bool operator!=(const system_executor&, const system_executor&) noexcept;
-
-} // inline namespace v1
-} // namespace net
-} // namespace experimental
-} // namespace std
-\end{codeblock}
-
-\pnum
-Class \tcode{system_executor} satisfies the \tcode{Destructible} (\CppXref{destructible}), \tcode{DefaultConstructible} (\CppXref{defaultconstructible}), and \tcode{Executor}~(\ref{async.reqmts.executor}) type requirements.
-
-\pnum
-To satisfy the \tcode{Executor} requirements for the \tcode{post} and \tcode{defer} member functions, the system executor may create \tcode{thread} objects to run the submitted function objects. These \tcode{thread} objects are collectively referred to as system threads.
-
-
-\rSec2[async.system.exec.ops]{\tcode{system_executor} operations}
-
-\indexlibrarymember{context}{system_executor}%
-\begin{itemdecl}
-system_context& context() const noexcept;
-\end{itemdecl}
-
-\begin{itemdescr}
-\pnum
-\returns A reference to an object with static storage duration. All calls to this function return references to the same object.
-\end{itemdescr}
-
-\indexlibrarymember{dispatch}{system_executor}%
-\begin{itemdecl}
-template<class Func, class ProtoAllocator>
-  void dispatch(Func&& f, const ProtoAllocator& a) const;
-\end{itemdecl}
-
-\begin{itemdescr}
-\pnum
-\effects Equivalent to \tcode{\placeholdernc{DECAY_COPY}(forward<Func>(f))()} (\CppXref{thread.decaycopy}).
-\end{itemdescr}
-
-\indexlibrarymember{post}{system_executor}%
-\indexlibrarymember{defer}{system_executor}%
-\begin{itemdecl}
-template<class Func, class ProtoAllocator>
-  void post(Func&& f, const ProtoAllocator& a) const;
-template<class Func, class ProtoAllocator>
-  void defer(Func&& f, const ProtoAllocator& a) const;
-\end{itemdecl}
-
-\begin{itemdescr}
-\pnum
-\effects If \tcode{context().stopped()} is \tcode{false},
-creates an object \tcode{f1} initialized with \tcode{\placeholdernc{DECAY_COPY}(forw\-ard<Func>(f))},
-and calls \tcode{f1()} as if in a thread of execution represented by a \tcode{thread} object.
-Any exception propagated from the execution of \tcode{\placeholdernc{DECAY_COPY}(forward<Func>(f))()}
-results in a call to \tcode{std::terminate}.
-\end{itemdescr}
-
-
-
-\rSec2[async.system.exec.comparisons]{\tcode{system_executor} comparisons}
-
-\indexlibrarymember{operator==}{system_executor}%
-\begin{itemdecl}
-bool operator==(const system_executor&, const system_executor&) noexcept;
-\end{itemdecl}
-
-\begin{itemdescr}
-\pnum
-\returns \tcode{true}.
-\end{itemdescr}
-
-\indexlibrarymember{operator"!=}{system_executor}%
-\begin{itemdecl}
-bool operator!=(const system_executor&, const system_executor&) noexcept;
-\end{itemdecl}
-
-\begin{itemdescr}
-\pnum
-\returns \tcode{false}.
-\end{itemdescr}
-
-
-
-
 \rSec1[async.system.context]{Class \tcode{system_context}}
 
 \indexlibrary{\idxcode{system_context}}%
 \pnum
-Class \tcode{system_context} implements the execution context associated with \tcode{system_executor} objects.
+Class \tcode{system_context} implements an execution context that represents the ability to run a submitted function object on any thread.
 
 \begin{codeblock}
 namespace std {
@@ -1873,7 +1752,7 @@ inline namespace v1 {
   public:
     // types:
 
-    using executor_type = system_executor;
+    using executor_type = @\seebelow@;
 
     // construct / copy / destroy:
 
@@ -1900,6 +1779,27 @@ inline namespace v1 {
 \pnum
 The class \tcode{system_context} satisfies the \tcode{ExecutionContext}~(\ref{async.reqmts.executioncontext}) type requirements.
 
+\indexlibrarymember{executor_type}{system_context}%
+\pnum
+\tcode{executor_type} is an executor type conforming to the specification for \tcode{system_context} executor types described below. Executor objects of type \tcode{executor_type} have the following properties established:
+\begin{itemize}
+\item
+\tcode{execution::oneway}
+\item
+\tcode{execution::single}
+\item
+\tcode{execution::blocking.possibly}
+\item
+\tcode{execution::relationship.fork}
+\item
+\tcode{execution::mapping.thread}
+\item
+\tcode{execution::allocator(std::allocator<void>())}
+\end{itemize}
+
+\pnum
+\tcode{system_context} executors having a different set of established properties are represented by a distinct, unspecified type. Function objects submitted via a \tcode{system_context} executor object are permitted to execute on any thread. To satisfy the requirements for the \tcode{execution::blocking.never} property, a \tcode{system_context} executor may create \tcode{thread} objects to run the submitted function objects. These \tcode{thread} objects are collectively referred to as system threads.
+
 \pnum
 The \tcode{system_context} member functions \tcode{get_executor}, \tcode{stop}, and \tcode{stopped}, and the \tcode{system_executor} copy constructors, member functions and comparison operators, do not introduce data races as a result of concurrent calls to those functions from different threads of execution.
 
@@ -1920,7 +1820,7 @@ executor_type get_executor() noexcept;
 
 \begin{itemdescr}
 \pnum
-\returns \tcode{system_executor()}.
+\returns \tcode{executor_type()}.
 \end{itemdescr}
 
 \indexlibrarymember{stop}{system_context}%
@@ -1958,6 +1858,169 @@ void join();
 \pnum
 \sync The completion of each system thread synchronizes with (\CppXref{intro.multithread}) the corresponding successful \tcode{join()} return.
 \end{itemdescr}
+
+
+
+\rSec1[async.system.exec]{\tcode{system_context} executor types}
+
+\pnum
+All executor types accessible through \tcode{system_context::executor_type()}, \tcode{system_context::get_executor()}, and subsequent calls to the member function \tcode{require}, conform to the following specification.
+
+\indexlibrary{\idxcode{system_context::executor_type}}%
+\begin{codeblock}
+namespace std {
+namespace experimental {
+namespace net {
+inline namespace v1 {
+
+  class @\placeholder{C}@
+  {
+  public:
+    // construct / copy / destroy:
+
+    @\placeholder{C}@() {}
+
+    // \ref{async.system.exec.ops}, executor operations:
+
+    @\seebelow@ require(execution::blocking_t::possibly_t) const;
+    @\seebelow@ require(execution::blocking_t::never_t) const;
+    @\seebelow@ require(execution::relationship_t::fork_t) const;
+    @\seebelow@ require(execution::relationship_t::continuation_t) const;
+    @\seebelow@ require(execution::allocator_t<void>) const;
+    template<class ProtoAllocator>
+      @\seebelow@ require(const execution::allocator_t<ProtoAllocator>& a) const;
+
+    static constexpr execution::mapping_t query(execution::mapping_t) noexcept;
+    static system_context& query(execution::context_t) noexcept;
+    static constexpr execution::blocking_t query(execution::blocking_t) noexcept;
+    static constexpr execution::relationship_t query(execution::relationship_t) noexcept;
+    @\seebelow@ query(execution::allocator_t<void>) const noexcept;
+    template<class ProtoAllocator>
+      @\seebelow@ query(const execution::allocator_t<ProtoAllocator>&) const noexcept;
+
+    template<class Function>
+      void execute(Function&& f) const;
+  };
+
+  bool operator==(const @\placeholder{C}@& a, const @\placeholder{C}@& b) noexcept;
+  bool operator!=(const @\placeholder{C}@& a, const @\placeholder{C}@& b) noexcept;
+
+} // inline namespace v1
+} // namespace net
+} // namespace experimental
+} // namespace std
+\end{codeblock}
+
+\pnum
+\placeholder{C} is a type satisfying the OneWayExecutor requirements~(P0443R7).
+
+\rSec2[async.system.exec.ops]{\tcode{system_context} executor operations}
+
+\begin{itemdecl}
+@\seebelow@ require(execution::blocking_t::possibly_t) const;
+@\seebelow@ require(execution::blocking_t::never_t) const;
+@\seebelow@ require(execution::relationship_t::fork_t) const;
+@\seebelow@ require(execution::relationship_t::continuation_t) const;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+\returns A \tcode{system_context} executor object of an unspecified type conforming to these specifications, with the requested property established. When the requested property is part of a group that is defined as a mutually exclusive set, any other properties in the group are removed from the returned executor object. All other properties of the returned executor object are identical to those of \tcode{*this}.
+\end{itemdescr}
+
+\begin{itemdecl}
+@\seebelow@ require(execution::allocator_t<void>) const;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+\returns \tcode{require(execution::allocator(std::allocator<void>()))}.
+\end{itemdescr}
+
+\begin{itemdecl}
+template<class ProtoAllocator>
+  @\seebelow@ require(const execution::allocator_t<ProtoAllocator>& a) const;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+\returns A \tcode{system_context} executor object of an unspecified type conforming to these specifications, with the \tcode{execution::allocator_t<ProtoAllocator>} property established such that allocation and deallocation associated with function submission will be performed using a copy of \tcode{a.value()}. All other properties of the returned executor object are identical to those of \tcode{*this}.
+\end{itemdescr}
+
+\begin{itemdecl}
+static constexpr execution::mapping_t query(execution::mapping_t) noexcept;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+\returns \tcode{execution::mapping.thread}.
+\end{itemdescr}
+
+\begin{itemdecl}
+static system_context& query(execution::context_t) const;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+\returns A reference to the \tcode{system_context} object.
+\end{itemdescr}
+
+\begin{itemdecl}
+static constexpr execution::blocking_t query(execution::blocking_t) noexcept;
+static constexpr execution::relationship_t query(execution::relationship_t) noexcept;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+\returns The established value of the property for the executor type \placeholder{C}.
+\end{itemdescr}
+
+\begin{itemdecl}
+@\seebelow@ query(execution::allocator_t<void>) const noexcept;
+template<class ProtoAllocator>
+  @\seebelow@ query(const execution::allocator_t<ProtoAllocator>&) const noexcept;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+\returns The allocator object associated with the executor, with type and value as previously established by the \tcode{execution::allocator_t<ProtoAllocator>} property.
+\end{itemdescr}
+
+\indexlibrarymember{execute}{system_context::executor_type}%
+\begin{itemdecl}
+template<class Function>
+  void execute(Function&& f) const
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+\effects Submits the function \tcode{f} for execution according to the OneWayExecutor requirements and the properties established for \tcode{*this}. If \tcode{f} exits via an exception, calls \tcode{std::terminate()}.
+\end{itemdescr}
+
+
+
+\rSec2[async.system.exec.comparisons]{\tcode{system_context} executor comparisons}
+
+\indexlibrarymember{operator==}{system_context::executor_type}%
+\begin{itemdecl}
+bool operator==(const @\placeholder{C}@& a, const @\placeholder{C}@& b) noexcept;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+\returns \tcode{true}.
+\end{itemdescr}
+
+\indexlibrarymember{operator"!=}{system_context::executor_type}%
+\begin{itemdecl}
+bool operator!=(const @\placeholder{C}@& a, const @\placeholder{C}@& b) noexcept;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+\returns \tcode{false}.
+\end{itemdescr}
+
 
 
 
