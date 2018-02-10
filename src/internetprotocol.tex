@@ -3463,6 +3463,8 @@ namespace ip {
 
     // \ref{internet.resolver.ops}, basic_resolver operations:
 
+    io_context& context() noexcept;
+
     executor_type get_executor() noexcept;
 
     void cancel();
@@ -3527,7 +3529,13 @@ explicit basic_resolver(io_context& ctx);
 
 \begin{itemdescr}
 \pnum
-\postconditions \tcode{get_executor() == ctx.get_executor()}.
+\postconditions
+\begin{itemize}
+\item
+\tcode{addressof(context()) == addressof(ctx)}.
+\item
+\tcode{get_executor() == ctx.get_executor()}.
+\end{itemize}
 \end{itemdescr}
 
 \begin{itemdecl}
@@ -3539,7 +3547,13 @@ basic_resolver(basic_resolver&& rhs) noexcept;
 \effects Move constructs an object of class \tcode{basic_resolver<InternetProtocol>} that refers to the state originally represented by \tcode{rhs}.
 
 \pnum
-\postconditions \tcode{get_executor() == rhs.get_executor()}.
+\postconditions
+\begin{itemize}
+\item
+\tcode{addressof(context()) == addressof(rhs.context())}.
+\item
+\tcode{get_executor() == rhs.get_executor()}.
+\end{itemize}
 \end{itemdescr}
 
 
@@ -3568,7 +3582,13 @@ basic_resolver& operator=(basic_resolver&& rhs);
 \effects Cancels all outstanding asynchronous operations associated with \tcode{*this} as if by calling \tcode{cancel()}, then moves into \tcode{*this} the state originally represented by \tcode{rhs}.
 
 \pnum
-\postconditions \tcode{get_executor() == ctx.get_executor()}.
+\postconditions
+\begin{itemize}
+\item
+\tcode{addressof(context()) == addressof(rhs.context())}.
+\item
+\tcode{get_executor() == rhs.get_executor()}.
+\end{itemize}
 
 \pnum
 \returns \tcode{*this}.
@@ -3577,6 +3597,15 @@ basic_resolver& operator=(basic_resolver&& rhs);
 
 
 \rSec2[internet.resolver.ops]{\tcode{ip::basic_resolver} operations}
+
+\begin{itemdecl}
+io_context& context() noexcept;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+\returns The associated execution context.
+\end{itemdescr}
 
 \begin{itemdecl}
 executor_type get_executor() noexcept;
