@@ -36,7 +36,7 @@ inline namespace v1 {
   public:
     // types:
 
-    class executor_type;
+    using executor_type = @\seebelow@;
     using count_type = @\impdefx{type of \tcode{io_context::count_type}}@;
 
     // construct / copy / destroy:
@@ -82,6 +82,10 @@ inline namespace v1 {
 \pnum
 The class \tcode{io_context} satisfies the ExecutionContext type requirements~(\ref{async.reqmts.executioncontext}).
 
+\indexlibrarymember{executor_type}{io_context}%
+\pnum
+\tcode{executor_type} is an executor type conforming to the specification for \tcode{io_context} executor types described below.
+
 \indexlibrarymember{count_type}{io_context}%
 \pnum
 \tcode{count_type} is an \impldef{type of \tcode{io_context::count_type}}
@@ -95,7 +99,7 @@ For an object of type \tcode{io_context}, \defn{outstanding work} is defined as 
 
 \begin{itemize}
 \item
-the total number of calls to the \tcode{on_work_started} function, less the total number of calls to the \tcode{on_work_finished} function, to any executor of the \tcode{io_context}.
+the number of existing executor objects associated with the \tcode{io_context} for which the \tcode{execution::outstanding_work} property is established;
 \item
 the number of function objects that have been added to the \tcode{io_context} via any executor of the \tcode{io_context}, but not yet executed; and
 \item
@@ -134,6 +138,23 @@ executor_type get_executor() noexcept;
 \begin{itemdescr}
 \pnum
 \returns An executor that may be used for submitting function objects to the \tcode{io_context}.
+The returned executor has the following properties already established:
+\begin{itemize}
+\item
+\tcode{execution::oneway}
+\item
+\tcode{execution::single}
+\item
+\tcode{execution::possibly_blocking}
+\item
+\tcode{execution::not_continuation}
+\item
+\tcode{execution::not_outstanding_work}
+\item
+\tcode{execution::thread_execution_mapping}
+\item
+\tcode{execution::allocator(std::allocator<void>())}
+\end{itemize}
 \end{itemdescr}
 
 \indexlibrarymember{run}{io_context}%
@@ -214,7 +235,7 @@ If an executed function object throws an exception, the exception propagates to 
 \returns \tcode{1} if a function object was executed, otherwise \tcode{0}.
 
 \pnum
-\remarks This function may invoke additional function objects through nested calls to the \tcode{io_context} executor's \tcode{dispatch} member function. These do not count towards the return value.
+\remarks This function may invoke additional function objects through nested calls to the \tcode{io_context} executor's \tcode{execute} member function. These do not count towards the return value.
 
 \pnum
 \begin{note}
@@ -256,7 +277,7 @@ If an executed function object throws an exception, the exception propagates to 
 \returns \tcode{1} if a function object was executed, otherwise \tcode{0}.
 
 \pnum
-\remarks This function may invoke additional function objects through nested calls to the \tcode{io_context} executor's \tcode{dispatch} member function. These do not count towards the return value.
+\remarks This function may invoke additional function objects through nested calls to the \tcode{io_context} executor's \tcode{execute} member function. These do not count towards the return value.
 \end{itemdescr}
 
 \indexlibrarymember{poll}{io_context}%
@@ -295,7 +316,7 @@ If an executed function object throws an exception, the exception propagates to 
 \returns \tcode{1} if a function object was invoked, otherwise \tcode{0}.
 
 \pnum
-\remarks This function may invoke additional function objects through nested calls to the \tcode{io_context} executor's \tcode{dispatch} member function. These do not count towards the return value.
+\remarks This function may invoke additional function objects through nested calls to the \tcode{io_context} executor's \tcode{execute} member function. These do not count towards the return value.
 \end{itemdescr}
 
 \indexlibrarymember{stop}{io_context}%
@@ -337,7 +358,10 @@ void restart();
 
 
 
-\rSec1[io_context.exec]{Class \tcode{io_context::executor_type}}
+\rSec1[io_context.exec]{\tcode{io_context} executor types}
+
+\pnum
+All executor types accessible through \tcode{io_context::get_executor()}, and subsequent calls to the member function \tcode{require}, conform to the following specification.
 
 \indexlibrary{\idxcode{io_context::executor_type}}%
 \begin{codeblock}
@@ -346,38 +370,43 @@ namespace experimental {
 namespace net {
 inline namespace v1 {
 
-  class io_context::executor_type
+  class @\placeholder{C}@
   {
   public:
     // \ref{io_context.exec.cons}, construct / copy / destroy:
 
-    executor_type(const executor_type& other) noexcept;
-    executor_type(executor_type&& other) noexcept;
+    @\placeholder{C}@(const @\placeholder{C}@& other) noexcept;
+    @\placeholder{C}@(@\placeholder{C}@&& other) noexcept;
 
-    executor_type& operator=(const executor_type& other) noexcept;
-    executor_type& operator=(executor_type&& other) noexcept;
+    @\placeholder{C}@& operator=(const @\placeholder{C}@& other) noexcept;
+    @\placeholder{C}@& operator=(@\placeholder{C}@&& other) noexcept;
 
     // \ref{io_context.exec.ops}, executor operations:
 
+    @\seebelow@ require(execution::never_blocking_t) const;
+    @\seebelow@ require(execution::possibly_blocking_t) const;
+    @\seebelow@ require(execution::continuation_t) const;
+    @\seebelow@ require(execution::not_continuation_t) const;
+    @\seebelow@ require(execution::outstanding_work_t) const;
+    @\seebelow@ require(execution::not_outstanding_work_t) const;
+    @\seebelow@ require(execution::allocator_t<void>) const;
+    template<class ProtoAllocator>
+      @\seebelow@ require(const execution::allocator_t<ProtoAllocator>& a) const;
+
+    static constexpr bool query(execution::thread_execution_mapping_t) noexcept;
+    io_context& query(execution::context_t) const noexcept;
+    @\seebelow@ query(execution::allocator_t<void>) const noexcept;
+    template<class ProtoAllocator>
+      @\seebelow@ query(const execution::allocator_t<ProtoAllocator>&) const noexcept;
+
     bool running_in_this_thread() const noexcept;
 
-    io_context& context() const noexcept;
-
-    void on_work_started() const noexcept;
-    void on_work_finished() const noexcept;
-
-    template<class Func, class ProtoAllocator>
-      void dispatch(Func&& f, const ProtoAllocator& a) const;
-    template<class Func, class ProtoAllocator>
-      void post(Func&& f, const ProtoAllocator& a) const;
-    template<class Func, class ProtoAllocator>
-      void defer(Func&& f, const ProtoAllocator& a) const;
+    template<class Function>
+      void execute(Function&& f) const;
   };
 
-  bool operator==(const io_context::executor_type& a,
-                  const io_context::executor_type& b) noexcept;
-  bool operator!=(const io_context::executor_type& a,
-                  const io_context::executor_type& b) noexcept;
+  bool operator==(const @\placeholder{C}@& a, const @\placeholder{C}@& b) noexcept;
+  bool operator!=(const @\placeholder{C}@& a, const @\placeholder{C}@& b) noexcept;
 
 } // inline namespace v1
 } // namespace net
@@ -386,14 +415,14 @@ inline namespace v1 {
 \end{codeblock}
 
 \pnum
-\tcode{io_context::executor_type} is a type satisfying the Executor requirements~(\ref{async.reqmts.executor}). Objects of type \tcode{io_context::executor_type} are associated with an \tcode{io_context}, and function objects submitted using the \tcode{dispatch}, \tcode{post}, or \tcode{defer} member functions will be executed by the \tcode{io_context} from within a run function.]
+\placeholder{C} is a type satisfying the OneWayExecutor requirements~(P0443R5). Objects of type \placeholder{C} are associated with an \tcode{io_context}, and function objects submitted using the \tcode{execute} member function will be executed by the \tcode{io_context} from within a run function.
 
 
-\rSec2[io_context.exec.cons]{\tcode{io_context::executor_type} constructors}
+\rSec2[io_context.exec.cons]{\tcode{io_context} executor constructors}
 
 \indexlibrary{\idxcode{io_context::executor_type}!constructor}%
 \begin{itemdecl}
-executor_type(const executor_type& other) noexcept;
+@\placeholder{C}@(const @\placeholder{C}@& other) noexcept;
 \end{itemdecl}
 
 \begin{itemdescr}
@@ -402,7 +431,7 @@ executor_type(const executor_type& other) noexcept;
 \end{itemdescr}
 
 \begin{itemdecl}
-executor_type(executor_type&& other) noexcept;
+@\placeholder{C}@(@\placeholder{C}@&& other) noexcept;
 \end{itemdecl}
 
 \begin{itemdescr}
@@ -412,11 +441,11 @@ executor_type(executor_type&& other) noexcept;
 
 
 
-\rSec2[io_context.exec.assign]{\tcode{io_context::executor_type} assignment}
+\rSec2[io_context.exec.assign]{\tcode{io_context} executor assignment}
 
 \indexlibrarymember{operator=}{io_context::executor_type}%
 \begin{itemdecl}
-executor_type& operator=(const executor_type& other) noexcept;
+@\placeholder{C}@& operator=(const @\placeholder{C}@& other) noexcept;
 \end{itemdecl}
 
 \begin{itemdescr}
@@ -428,7 +457,7 @@ executor_type& operator=(const executor_type& other) noexcept;
 \end{itemdescr}
 
 \begin{itemdecl}
-executor_type& operator=(executor_type&& other) noexcept;
+@\placeholder{C}@& operator=(@\placeholder{C}@&& other) noexcept;
 \end{itemdecl}
 
 \begin{itemdescr}
@@ -441,7 +470,69 @@ executor_type& operator=(executor_type&& other) noexcept;
 
 
 
-\rSec2[io_context.exec.ops]{\tcode{io_context::executor_type} operations}
+\rSec2[io_context.exec.ops]{\tcode{io_context} executor operations}
+
+\begin{itemdecl}
+@\seebelow@ require(execution::never_blocking_t) const;
+@\seebelow@ require(execution::possibly_blocking_t) const;
+@\seebelow@ require(execution::continuation_t) const;
+@\seebelow@ require(execution::not_continuation_t) const;
+@\seebelow@ require(execution::outstanding_work_t) const;
+@\seebelow@ require(execution::not_outstanding_work_t) const;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+\returns An executor object of an unspecified type conforming to these specifications, associated with the same \tcode{io_context} as \tcode{*this}, and having the requested property established. When the requested property is part of a group that is defined as a mutually exclusive set, any other properties in the group are removed from the returned executor object. All other properties of the returned executor object are identical to those of \tcode{*this}.
+\end{itemdescr}
+
+\begin{itemdecl}
+@\seebelow@ require(execution::allocator_t<void>) const;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+\returns \tcode{require(execution::allocator(std::allocator<void>()))}.
+\end{itemdescr}
+
+\begin{itemdecl}
+template<class ProtoAllocator>
+  @\seebelow@ require(const execution::allocator_t<ProtoAllocator>& a) const;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+\returns An executor object of an unspecified type conforming to these specifications, associated with the same \tcode{io_context} as \tcode{*this}, with the \tcode{execution::allocator_t<ProtoAllocator>} property established such that allocation and deallocation associated with function submission will be performed using a copy of \tcode{a.value()}. All other properties of the returned executor object are identical to those of \tcode{*this}.
+\end{itemdescr}
+
+\begin{itemdecl}
+static constexpr bool query(execution::thread_execution_mapping_t) noexcept;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+\returns \tcode{true}.
+\end{itemdescr}
+
+\begin{itemdecl}
+io_context& query(execution::context_t) const noexcept;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+\returns A reference to the associated \tcode{io_context} object.
+\end{itemdescr}
+
+\begin{itemdecl}
+@\seebelow@ query(execution::allocator_t<void>) const noexcept;
+template<class ProtoAllocator>
+  @\seebelow@ query(const execution::allocator_t<ProtoAllocator>&) const noexcept;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+\returns The allocator object associated with the executor, with type and value as previously established by the \tcode{execution::allocator_t<ProtoAllocator>} property.
+\end{itemdescr}
 
 \indexlibrarymember{running_in_this_thread}{io_context::executor_type}%
 \begin{itemdecl}
@@ -453,88 +544,34 @@ bool running_in_this_thread() const noexcept;
 \returns \tcode{true} if the current thread of execution is calling a run function of the associated \tcode{io_context} object. \begin{note} That is, the current thread of execution's call chain includes a run function. \end{note}
 \end{itemdescr}
 
-\indexlibrarymember{context}{io_context::executor_type}%
+\indexlibrarymember{execute}{io_context::executor_type}%
 \begin{itemdecl}
-io_context& context() const noexcept;
+template<class Function>
+  void execute(Function&& f) const
 \end{itemdecl}
 
 \begin{itemdescr}
 \pnum
-\returns A reference to the associated \tcode{io_context} object.
-\end{itemdescr}
-
-\indexlibrarymember{on_work_started}{io_context::executor_type}%
-\begin{itemdecl}
-void on_work_started() const noexcept;
-\end{itemdecl}
-
-\begin{itemdescr}
-\pnum
-\effects Increments the count of outstanding work associated with the \tcode{io_context}.
-\end{itemdescr}
-
-\indexlibrarymember{on_work_finished}{io_context::executor_type}%
-\begin{itemdecl}
-void on_work_finished() const noexcept;
-\end{itemdecl}
-
-\begin{itemdescr}
-\pnum
-\effects Decrements the count of outstanding work associated with the \tcode{io_context}.
-\end{itemdescr}
-
-\indexlibrarymember{dispatch}{io_context::executor_type}%
-\begin{itemdecl}
-template<class Func, class ProtoAllocator>
-  void dispatch(Func&& f, const ProtoAllocator& a) const;
-\end{itemdecl}
-
-\begin{itemdescr}
-\pnum
-\effects If \tcode{running_in_this_thread()} is \tcode{true}, calls \tcode{\placeholdernc{DECAY_COPY}(forward<Func>(f))()} (\CppXref{thread.decaycopy}). \begin{note} If \tcode{f} exits via an exception, the exception propagates to the caller of \tcode{dispatch()}. \end{note} Otherwise, calls \tcode{post(forward<Func>(f), a)}.
-\end{itemdescr}
-
-\indexlibrarymember{post}{io_context::executor_type}%
-\begin{itemdecl}
-template<class Func, class ProtoAllocator>
-  void post(Func&& f, const ProtoAllocator& a) const;
-\end{itemdecl}
-
-\begin{itemdescr}
-\pnum
-\effects Adds \tcode{f} to the \tcode{io_context}.
-\end{itemdescr}
-
-\indexlibrarymember{defer}{io_context::executor_type}%
-\begin{itemdecl}
-template<class Func, class ProtoAllocator>
-  void defer(Func&& f, const ProtoAllocator& a) const;
-\end{itemdecl}
-
-\begin{itemdescr}
-\pnum
-\effects Adds \tcode{f} to the \tcode{io_context}.
+\effects Submits the function \tcode{f} for execution on the \tcode{io_context} according to the OneWayExecutor requirements and the properties established for \tcode{*this}. If \tcode{f} exits via an exception, the exception does not propagate to the caller of \tcode{execute()}, but is instead subsequently propagated to a caller of a run function for the \tcode{io_context} object.
 \end{itemdescr}
 
 
 
-\rSec2[io_context.exec.comparisons]{\tcode{io_context::executor_type} comparisons}
+\rSec2[io_context.exec.comparisons]{\tcode{io_context} executor comparisons}
 
 \indexlibrarymember{operator==}{io_context::executor_type}%
 \begin{itemdecl}
-bool operator==(const io_context::executor_type& a,
-                const io_context::executor_type& b) noexcept;
+bool operator==(const @\placeholder{C}@& a, const @\placeholder{C}@& b) noexcept;
 \end{itemdecl}
 
 \begin{itemdescr}
 \pnum
-\returns \tcode{addressof(a.context()) == addressof(b.context())}.
+\returns \tcode{addressof(a.query(execution::context_t)) == addressof(b.query(execution::context_t))}.
 \end{itemdescr}
 
 \indexlibrarymember{operator"!=}{io_context::executor_type}%
 \begin{itemdecl}
-bool operator!=(const io_context::executor_type& a,
-                const io_context::executor_type& b) noexcept;
+bool operator!=(const @\placeholder{C}@& a, const @\placeholder{C}@& b) noexcept;
 \end{itemdecl}
 
 \begin{itemdescr}
