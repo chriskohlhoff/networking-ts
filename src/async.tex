@@ -2011,7 +2011,7 @@ bool operator!=(const @\placeholder{C}@& a, const @\placeholder{C}@& b) noexcept
 
 \indexlibrary{\idxcode{dispatch}}%
 \pnum
-\begin{note} The function \tcode{dispatch} satisfies the requirements for an asynchronous operation~(\ref{async.reqmts.async}), except for the requirement that the operation uses \tcode{post} if it completes immediately. \end{note}
+\begin{note} The function \tcode{dispatch} satisfies the requirements for an asynchronous operation~(\ref{async.reqmts.async}), except for the requirement that the operation uses the \tcode{execution::never_blocking} property if it completes immediately. \end{note}
 
 \begin{itemdecl}
 template<class CompletionToken>
@@ -2028,7 +2028,14 @@ template<class CompletionToken>
 \item
  Constructs an object \tcode{completion} of type \tcode{async_completion<CompletionToken, void()>}, initialized with \tcode{token}.
 \item
- Performs \tcode{ex.dispatch(std::move(completion.completion_handler), alloc)}, where \tcode{ex} is the result of \tcode{get_associated_executor(completion.completion_handler)}, and \tcode{alloc} is the result of \tcode{get_associated_allocator(completion.completion_handler)}.
+Performs:
+\begin{codeblock}
+execution::prefer(
+  execution::require(ex, execution::oneway, execution::single),
+    execution::possibly_blocking, execution::allocator(alloc)).execute(
+      std::move(completion.completion_handler));
+\end{codeblock}
+where \tcode{ex} is the result of \tcode{get_associated_executor(completion.completion_handler)}, and \tcode{alloc} is the result of \tcode{get_associated_allocator(completion.completion_handler)}.
 \end{itemize}
 
 \pnum
@@ -2053,19 +2060,24 @@ template<class Executor, class CompletionToken>
  Constructs a function object \tcode{f} containing as members:
 \begin{itemize}
 \item
-a copy of the completion handler \tcode{h}, initialized with \tcode{std::move(completion.completion_handler)},
+an executor object \tcode{w} for the completion handler's associated executor, initialized with \tcode{execution::prefer(get_associated_executor(h), execution::outstanding_work)}
 \item
-an \tcode{executor_work_guard} object \tcode{w} for the completion handler's associated executor, initialized with \tcode{make_work_guard(h)},
+a copy of the completion handler \tcode{h}, initialized with \tcode{std::move(completion.completion_handler)},
 \end{itemize}
 and where the effect of \tcode{f()} is:
-\begin{itemize}
+\begin{codeblock}
+execution::prefer(
+  execution::require(w, execution::oneway, execution::single),
+    execution::possibly_blocking, execution::allocator(alloc)).execute(std::move(h));
+\end{codeblock}
+where \tcode{alloc} is the result of \tcode{get_associated_allocator(h)}.
 \item
-\tcode{w.get_executor().dispatch(std::move(h), alloc)}, where \tcode{alloc} is the result of \tcode{get_associated_allocator(h)}, followed by
-\item
-\tcode{w.reset()}.
-\end{itemize}
-\item
- Performs \tcode{ex.dispatch(std::move(f), alloc)}, where \tcode{alloc} is the result of \tcode{get_associated_allocator(completion.completion_handler)} prior to the construction of \tcode{f}.
+Performs:
+\begin{codeblock}
+execution::prefer(
+  execution::require(ex, execution::oneway, execution::single),
+    execution::possibly_blocking, execution::allocator(alloc)).execute(std::move(f));
+\end{codeblock}
 \end{itemize}
 
 \pnum
@@ -2116,7 +2128,13 @@ template<class CompletionToken>
 \item
  Constructs an object \tcode{completion} of type \tcode{async_completion<CompletionToken, void()>}, initialized with \tcode{token}.
 \item
- Performs \tcode{ex.post(std::move(completion.completion_handler), alloc)}, where \tcode{ex} is the result of \tcode{get_associated_executor(completion.completion_handler)}, and \tcode{alloc} is the result of \tcode{get_associated_allocator(completion.completion_handler)}.
+Performs:
+\begin{codeblock}
+execution::prefer(
+  execution::require(ex, execution::oneway, execution::single, execution::never_blocking),
+    execution::allocator(alloc)).execute(std::move(completion.completion_handler));
+\end{codeblock}
+where \tcode{ex} is the result of \tcode{get_associated_executor(completion.completion_handler)}, and \tcode{alloc} is the result of \tcode{get_associated_allocator(completion.completion_handler)}.
 \end{itemize}
 
 \pnum
@@ -2141,19 +2159,24 @@ template<class Executor, class CompletionToken>
  Constructs a function object \tcode{f} containing as members:
 \begin{itemize}
 \item
-a copy of the completion handler \tcode{h}, initialized with \tcode{std::move(completion.completion_handler)},
+an executor object \tcode{w} for the completion handler's associated executor, initialized with \tcode{execution::prefer(get_associated_executor(h), execution::outstanding_work)}
 \item
-an \tcode{executor_work_guard} object \tcode{w} for the completion handler's associated executor, initialized with \tcode{make_work_guard(h)},
+a copy of the completion handler \tcode{h}, initialized with \tcode{std::move(completion.completion_handler)},
 \end{itemize}
 and where the effect of \tcode{f()} is:
-\begin{itemize}
+\begin{codeblock}
+execution::prefer(
+  execution::require(w, execution::oneway, execution::single),
+    execution::possibly_blocking, execution::allocator(alloc)).execute(std::move(h));
+\end{codeblock}
+where \tcode{alloc} is the result of \tcode{get_associated_allocator(h)}.
 \item
-\tcode{w.get_executor().dispatch(std::move(h), alloc)}, where \tcode{alloc} is the result of \tcode{get_associated_allocator(h)}, followed by
-\item
-\tcode{w.reset()}.
-\end{itemize}
-\item
- Performs \tcode{ex.post(std::move(f), alloc)}, where \tcode{alloc} is the result of \tcode{get_associated_allocator(completion.completion_handler)} prior to the construction of \tcode{f}.
+Performs:
+\begin{codeblock}
+execution::prefer(
+  execution::require(ex, execution::oneway, execution::single, execution::never_blocking),
+    execution::allocator(alloc)).execute(std::move(f));
+\end{codeblock}
 \end{itemize}
 
 \pnum
@@ -2187,7 +2210,7 @@ unless \tcode{is_convertible<Exec\-ution\-Context\&, execution_context\&>::value
 
 \indexlibrary{\idxcode{defer}}%
 \pnum
-\begin{note} The function \tcode{defer} satisfies the requirements for an asynchronous operation~(\ref{async.reqmts.async}), except for the requirement that the operation uses \tcode{post} if it completes immediately. \end{note}
+\begin{note} The function \tcode{defer} satisfies the requirements for an asynchronous operation~(\ref{async.reqmts.async}). \end{note}
 
 \begin{itemdecl}
 template<class CompletionToken>
@@ -2204,7 +2227,14 @@ template<class CompletionToken>
 \item
  Constructs an object \tcode{completion} of type \tcode{async_completion<CompletionToken, void()>}, initialized with \tcode{token}.
 \item
- Performs \tcode{ex.defer(std::move(completion.completion_handler), alloc)}, where \tcode{ex} is the result of \tcode{get_associated_executor(completion.completion_handler)}, and \tcode{alloc} is the result of \tcode{get_associated_allocator(completion.completion_handler)}.
+Performs:
+\begin{codeblock}
+execution::prefer(
+  execution::require(ex, execution::oneway, execution::single, execution::never_blocking),
+    execution::continuation, execution::allocator(alloc)).execute(
+      std::move(completion.completion_handler));
+\end{codeblock}
+where \tcode{ex} is the result of \tcode{get_associated_executor(completion.completion_handler)}, and \tcode{alloc} is the result of \tcode{get_associated_allocator(completion.completion_handler)}.
 \end{itemize}
 
 \pnum
@@ -2226,22 +2256,27 @@ template<class Executor, class CompletionToken>
 \item
  Constructs an object \tcode{completion} of type \tcode{async_completion<CompletionToken, void()>}, initialized with \tcode{token}.
 \item
-Constructs a function object \tcode{f} containing as members:
+ Constructs a function object \tcode{f} containing as members:
 \begin{itemize}
+\item
+an executor object \tcode{w} for the completion handler's associated executor, initialized with \tcode{execution::prefer(get_associated_executor(h), execution::outstanding_work)}
 \item
 a copy of the completion handler \tcode{h}, initialized with \tcode{std::move(completion.completion_handler)},
-\item
-an \tcode{executor_work_guard} object \tcode{w} for the completion handler's associated executor, initialized with \tcode{make_work_guard(h)},
 \end{itemize}
 and where the effect of \tcode{f()} is:
-\begin{itemize}
+\begin{codeblock}
+execution::prefer(
+  execution::require(w, execution::oneway, execution::single),
+    execution::possibly_blocking, execution::allocator(alloc)).execute(std::move(h));
+\end{codeblock}
+where \tcode{alloc} is the result of \tcode{get_associated_allocator(h)}.
 \item
-\tcode{w.get_executor().dispatch(std::move(h), alloc)}, where \tcode{alloc} is the result of \tcode{get_associated_allocator(h)}, followed by
-\item
-\tcode{w.reset()}.
-\end{itemize}
-\item
- Performs \tcode{ex.defer(std::move(f), alloc)}, where \tcode{alloc} is the result of \tcode{get_associated_allocator(completion.completion_handler)} prior to the construction of \tcode{f}.
+Performs:
+\begin{codeblock}
+execution::prefer(
+  execution::require(ex, execution::oneway, execution::single, execution::never_blocking),
+    execution::continuation, execution::allocator(alloc)).execute(std::move(f));
+\end{codeblock}
 \end{itemize}
 
 \pnum
