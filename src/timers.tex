@@ -197,6 +197,8 @@ inline namespace v1 {
 
     // \ref{timer.waitable.ops}, basic_waitable_timer operations:
 
+    io_context& context() noexcept;
+
     executor_type get_executor() noexcept;
 
     size_t cancel();
@@ -244,6 +246,8 @@ basic_waitable_timer(io_context& ctx, const time_point& t);
 \postconditions
 \begin{itemize}
 \item
+\tcode{addressof(context()) == addressof(ctx)}.
+\item
 \tcode{get_executor() == ctx.get_executor()}.
 \item
 \tcode{expiry() == t}.
@@ -259,7 +263,13 @@ basic_waitable_timer(io_context& ctx, const duration& d);
 \effects Sets the expiry time as if by calling \tcode{expires_after(d)}.
 
 \pnum
-\postconditions \tcode{get_executor() == ctx.get_executor()}.
+\postconditions
+\begin{itemize}
+\item
+\tcode{addressof(context()) == addressof(ctx)}.
+\item
+\tcode{get_executor() == ctx.get_executor()}.
+\end{itemize}
 \end{itemdescr}
 
 \begin{itemdecl}
@@ -273,6 +283,8 @@ basic_waitable_timer(basic_waitable_timer&& rhs);
 \pnum
 \postconditions
 \begin{itemize}
+\item
+\tcode{addressof(context()) == addressof(rhs.context())}.
 \item
 \tcode{get_executor() == rhs.get_executor()}.
 \item
@@ -313,6 +325,8 @@ basic_waitable_timer& operator=(basic_waitable_timer&& rhs);
 \postconditions
 \begin{itemize}
 \item
+\tcode{addressof(context()) == addressof(rhs.context())}.
+\item
 \tcode{get_executor() == rhs.get_executor()}.
 \item
 \tcode{expiry()} returns the same value as \tcode{rhs.expiry()} prior to the assignment.
@@ -327,6 +341,16 @@ basic_waitable_timer& operator=(basic_waitable_timer&& rhs);
 
 
 \rSec2[timer.waitable.ops]{\tcode{basic_waitable_timer} operations}
+
+\indexlibrarymember{context}{basic_waitable_timer}%
+\begin{itemdecl}
+io_context& context() noexcept;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+\returns The associated execution context.
+\end{itemdescr}
 
 \indexlibrarymember{get_executor}{basic_waitable_timer}%
 \begin{itemdecl}

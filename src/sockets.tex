@@ -1447,6 +1447,8 @@ inline namespace v1 {
 
     // \ref{socket.basic.ops}, basic_socket operations:
 
+    io_context& context() noexcept;
+
     executor_type get_executor() noexcept;
 
     native_handle_type native_handle(); // \nativeref
@@ -1573,6 +1575,8 @@ explicit basic_socket(io_context& ctx);
 \postconditions
 \begin{itemize}
 \item
+\tcode{addressof(context()) == addressof(ctx)}.
+\item
 \tcode{get_executor() == ctx.get_executor()}.
 \item
 \tcode{is_open() == false}.
@@ -1590,6 +1594,8 @@ basic_socket(io_context& ctx, const protocol_type& protocol);
 \pnum
 \postconditions
 \begin{itemize}
+\item
+\tcode{addressof(context()) == addressof(ctx)}.
 \item
 \tcode{get_executor() == ctx.get_executor()}.
 \item
@@ -1618,6 +1624,8 @@ bind(endpoint);
 \postconditions
 \begin{itemize}
 \item
+\tcode{addressof(context()) == addressof(ctx)}.
+\item
 \tcode{get_executor() == ctx.get_executor()}.
 \item
 \tcode{is_open() == true}.
@@ -1644,6 +1652,8 @@ basic_socket(io_context& ctx, const protocol_type& protocol,
 \postconditions
 \begin{itemize}
 \item
+\tcode{addressof(context()) == addressof(ctx)}.
+\item
 \tcode{get_executor() == ctx.get_executor()}.
 \item
 \tcode{is_open() == true}.
@@ -1665,6 +1675,8 @@ basic_socket(basic_socket&& rhs);
 \pnum
 \postconditions
 \begin{itemize}
+\item
+\tcode{addressof(context()) == addressof(rhs.context())}.
 \item
 \tcode{get_executor() == rhs.get_executor()}.
 \item
@@ -1695,6 +1707,8 @@ template<class OtherProtocol>
 \pnum
 \postconditions
 \begin{itemize}
+\item
+\tcode{addressof(context()) == addressof(rhs.context())}.
 \item
 \tcode{get_executor() == rhs.get_executor()}.
 \item
@@ -1742,6 +1756,8 @@ basic_socket& operator=(basic_socket&& rhs);
 \postconditions
 \begin{itemize}
 \item
+\tcode{addressof(context()) == addressof(rhs.context())}.
+\item
 \tcode{get_executor() == rhs.get_executor()}.
 \item
 \tcode{is_open()} returns the same value as \tcode{rhs.is_open()} prior to the assignment.
@@ -1773,6 +1789,8 @@ template<class OtherProtocol>
 \postconditions
 \begin{itemize}
 \item
+\tcode{addressof(context()) == addressof(rhs.context())}.
+\item
 \tcode{get_executor() == rhs.get_executor()}.
 \item
 \tcode{is_open()} returns the same value as \tcode{rhs.is_open()} prior to the assignment.
@@ -1794,6 +1812,15 @@ template<class OtherProtocol>
 
 
 \rSec2[socket.basic.ops]{\tcode{basic_socket} operations}
+
+\begin{itemdecl}
+io_context& context() noexcept;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+\returns The associated execution context.
+\end{itemdescr}
 
 \begin{itemdecl}
 executor_type get_executor() noexcept;
@@ -3445,6 +3472,8 @@ inline namespace v1 {
 
     // \ref{socket.acceptor.ops}, basic_socket_acceptor operations:
 
+    io_context& context() noexcept;
+
     executor_type get_executor() noexcept;
 
     native_handle_type native_handle(); // \nativeref
@@ -3564,6 +3593,8 @@ explicit basic_socket_acceptor(io_context& ctx);
 \postconditions
 \begin{itemize}
 \item
+\tcode{addressof(context()) == addressof(ctx)}.
+\item
 \tcode{get_executor() == ctx.get_executor()}.
 \item
 \tcode{is_open() == false}.
@@ -3581,6 +3612,8 @@ basic_socket_acceptor(io_context& ctx, const protocol_type& protocol);
 \pnum
 \postconditions
 \begin{itemize}
+\item
+\tcode{addressof(context()) == addressof(ctx)}.
 \item
 \tcode{get_executor() == ctx.get_executor()}.
 \item
@@ -3615,6 +3648,8 @@ listen();
 \postconditions
 \begin{itemize}
 \item
+\tcode{addressof(context()) == addressof(ctx)}.
+\item
 \tcode{get_executor() == ctx.get_executor()}.
 \item
 \tcode{is_open() == true}.
@@ -3643,6 +3678,8 @@ basic_socket_acceptor(io_context& ctx, const protocol_type& protocol,
 \postconditions
 \begin{itemize}
 \item
+\tcode{addressof(context()) == addressof(ctx)}.
+\item
 \tcode{get_executor() == ctx.get_executor()}.
 \item
 \tcode{is_open() == true}.
@@ -3666,6 +3703,8 @@ basic_socket_acceptor(basic_socket_acceptor&& rhs);
 \pnum
 \postconditions
 \begin{itemize}
+\item
+\tcode{addressof(context()) == addressof(rhs.context())}.
 \item
 \tcode{get_executor() == rhs.get_executor()}.
 \item
@@ -3698,6 +3737,8 @@ template<class OtherProtocol>
 \pnum
 \postconditions
 \begin{itemize}
+\item
+\tcode{addressof(context()) == addressof(rhs.context())}.
 \item
 \tcode{get_executor() == rhs.get_executor()}.
 \item
@@ -3747,6 +3788,8 @@ basic_socket_acceptor& operator=(basic_socket_acceptor&& rhs);
 \postconditions
 \begin{itemize}
 \item
+\tcode{addressof(context()) == addressof(rhs.context())}.
+\item
 \tcode{get_executor() == rhs.get_executor()}.
 \item
 \tcode{is_open()} returns the same value as \tcode{rhs.is_open()} prior to the assignment.
@@ -3782,6 +3825,8 @@ template<class OtherProtocol>
 \postconditions
 \begin{itemize}
 \item
+\tcode{addressof(context()) == addressof(rhs.context())}.
+\item
 \tcode{get_executor() == rhs.get_executor()}.
 \item
 \tcode{is_open()} returns the same value as \tcode{rhs.is_open()} prior to the assignment.
@@ -3807,6 +3852,15 @@ template<class OtherProtocol>
 
 
 \rSec2[socket.acceptor.ops]{\tcode{basic_socket_acceptor} operations}
+
+\begin{itemdecl}
+io_context& context() noexcept;
+\end{itemdecl}
+
+\begin{itemdescr}
+\pnum
+\returns The associated execution context.
+\end{itemdescr}
 
 \begin{itemdecl}
 executor_type get_executor() noexcept;
@@ -4169,7 +4223,7 @@ socket_type accept(error_code& ec);
 
 \begin{itemdescr}
 \pnum
-\returns \tcode{accept(get_executor().context(), ec)}.
+\returns \tcode{accept(context(), ec)}.
 \end{itemdescr}
 
 \begin{itemdecl}
@@ -4198,7 +4252,7 @@ template<class CompletionToken>
 \pnum
 \returns
 \begin{codeblock}
-async_accept(get_executor().context(), forward<CompletionToken>(token))
+async_accept(context(), forward<CompletionToken>(token))
 \end{codeblock}
 \end{itemdescr}
 
@@ -4226,7 +4280,7 @@ socket_type accept(endpoint_type& endpoint, error_code& ec);
 
 \begin{itemdescr}
 \pnum
-\returns \tcode{accept(get_executor().context(), endpoint, ec)}.
+\returns \tcode{accept(context(), endpoint, ec)}.
 \end{itemdescr}
 
 \begin{itemdecl}
@@ -4262,7 +4316,7 @@ template<class CompletionToken>
 \pnum
 \returns
 \begin{codeblock}
-async_accept(get_executor().context(), endpoint, forward<CompletionToken>(token))
+async_accept(context(), endpoint, forward<CompletionToken>(token))
 \end{codeblock}
 \end{itemdescr}
 
