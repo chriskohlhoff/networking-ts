@@ -2350,17 +2350,14 @@ inline namespace v1 {
 
     bool running_in_this_thread() const noexcept;
 
-    execution_context& context() const noexcept;
+    template<class Property>
+      @\seebelow@ require(const Property& p) const;
 
-    void on_work_started() const noexcept;
-    void on_work_finished() const noexcept;
+    template<class Property>
+      @\seebelow@ query(const Property& p) const;
 
-    template<class Func, class ProtoAllocator>
-      void dispatch(Func&& f, const ProtoAllocator& a) const;
-    template<class Func, class ProtoAllocator>
-      void post(Func&& f, const ProtoAllocator& a) const;
-    template<class Func, class ProtoAllocator>
-      void defer(Func&& f, const ProtoAllocator& a) const;
+    template<class Function>
+      void execute(Function&& f) const;
 
   private:
     Executor inner_ex_; // \expos
@@ -2386,10 +2383,10 @@ inline namespace v1 {
 strand objects \tcode{s1} and \tcode{s2} such that \tcode{s1 == s2}
 
 \item
-a function object \tcode{f1} added to the strand \tcode{s1} using \tcode{post} or \tcode{defer}, or using \tcode{dispatch} when \tcode{s1.running_in_this_thread()} is \tcode{false}
+a function object \tcode{f1} submitted to the strand \tcode{s1} when the \tcode{execution::never_blocking} property is established in \tcode{s1}, or when \tcode{s1.running_in_this_thread()} is \tcode{false}
 
 \item
-a function object \tcode{f2} added to the strand \tcode{s2} using \tcode{post} or \tcode{defer}, or using \tcode{dispatch} when \tcode{s2.running_in_this_thread()} is \tcode{false}
+a function object \tcode{f2} submitted to the strand \tcode{s2} when the \tcode{execution::never_blocking} property is established in \tcode{s2}, or when \tcode{s2.running_in_this_thread()} is \tcode{false}
 \end{itemize}
 
 \pnum
@@ -2631,71 +2628,40 @@ bool running_in_this_thread() const noexcept;
 
 \begin{itemdescr}
 \pnum
-\returns \tcode{true} if the current thread of execution is running a function that was submitted to the strand, or to any other strand object \tcode{s} such that \tcode{s == *this}, using \tcode{dispatch}, \tcode{post} or \tcode{defer}; otherwise \tcode{false}. \begin{note} That is, the current thread of execution's call chain includes a function that was submitted to the strand. \end{note}
+\returns \tcode{true} if the current thread of execution is running a function that was submitted to the strand, or to any other strand object that shares the same ordered, non-concurrent state, using \tcode{execute}; otherwise \tcode{false}. \begin{note} That is, the current thread of execution's call chain includes a function that was submitted to the strand. \end{note}
 \end{itemdescr}
 
-\indexlibrarymember{context}{strand}%
 \begin{itemdecl}
-execution_context& context() const noexcept;
+template<class Property>
+  @\seebelow@ require(const Property& p) const;
+\end{itemdecl}
+
+\pnum
+\returns A strand \tcode{s} of type \tcode{strand<decay_t<decltype(inner_ex_.require(p))>>}, where \tcode{s.inner_ex_} is initialized with \tcode{inner_ex_.require(p)}, and sharing the same ordered, non-concurrent state as \tcode{*this}.
+
+\pnum
+\remarks Shall not participate in overload resolution unless \tcode{inner_ex_.require(p)} is well-formed.
+
+\begin{itemdecl}
+template<class Property>
+  @\seebelow@ query(const Property& p) const;
+\end{itemdecl}
+
+\pnum
+\returns \tcode{inner_ex_.query(p)}.
+
+\pnum
+\remarks Shall not participate in overload resolution unless \tcode{inner_ex_.query(p)} is well-formed.
+
+\indexlibrarymember{execute}{strand}%
+\begin{itemdecl}
+template<class Function>
+  void execute(Function&& f) const;
 \end{itemdecl}
 
 \begin{itemdescr}
 \pnum
-\returns \tcode{inner_ex_.context()}.
-\end{itemdescr}
-
-\indexlibrarymember{on_work_started}{strand}%
-\begin{itemdecl}
-void on_work_started() const noexcept;
-\end{itemdecl}
-
-\begin{itemdescr}
-\pnum
-\effects Calls \tcode{inner_ex_.on_work_started()}.
-\end{itemdescr}
-
-\indexlibrarymember{on_work_finished}{strand}%
-\begin{itemdecl}
-void on_work_finished() const noexcept;
-\end{itemdecl}
-
-\begin{itemdescr}
-\pnum
-\effects Calls \tcode{inner_ex_.on_work_finished()}.
-\end{itemdescr}
-
-\indexlibrarymember{dispatch}{strand}%
-\begin{itemdecl}
-template<class Func, class ProtoAllocator>
-  void dispatch(Func&& f, const ProtoAllocator& a) const;
-\end{itemdecl}
-
-\begin{itemdescr}
-%% XXX overfull hbox
-\pnum
-\effects If \tcode{running_in_this_thread()} is \tcode{true}, calls \tcode{\placeholdernc{DECAY_COPY}(forward<Func>(f))()} (\CppXref{thread.decaycopy}). \begin{note} If \tcode{f} exits via an exception, the exception propagates to the caller of \tcode{dispatch()}. \end{note} Otherwise, requests invocation of \tcode{f}, as if by forwarding the function object \tcode{f} and allocator \tcode{a} to the executor \tcode{inner_ex_}, such that the guarantees of ordering and non-concurrency are met.
-\end{itemdescr}
-
-\indexlibrarymember{post}{strand}%
-\begin{itemdecl}
-template<class Func, class ProtoAllocator>
-  void post(Func&& f, const ProtoAllocator& a) const;
-\end{itemdecl}
-
-\begin{itemdescr}
-\pnum
-\effects Requests invocation of \tcode{f}, as if by forwarding the function object \tcode{f} and allocator \tcode{a} to the executor \tcode{inner_ex_}, such that the guarantees of ordering and non-concurrency are met.
-\end{itemdescr}
-
-\indexlibrarymember{defer}{strand}%
-\begin{itemdecl}
-template<class Func, class ProtoAllocator>
-  void defer(Func&& f, const ProtoAllocator& a) const;
-\end{itemdecl}
-
-\begin{itemdescr}
-\pnum
-\effects Requests invocation of \tcode{f}, as if by forwarding the function object \tcode{f} and allocator \tcode{a} to the executor \tcode{inner_ex_}, such that the guarantees of ordering and non-concurrency are met.
+\effects Submits \tcode{f} to the executor \tcode{inner_ex_}, such that the guarantees of ordering and non-concurrency are met.
 \end{itemdescr}
 
 
