@@ -2802,7 +2802,7 @@ The implementation provides a partial specialization \tcode{template <class Resu
 \end{itemize}
 
 \pnum
-For any executor type \tcode{E}, the associated object for the associator \tcode{associated_executor<H, E>} is an executor where, for function objects executed using the executor's \tcode{dispatch()}, \tcode{post()} or \tcode{defer()} functions, any exception thrown is caught by a function object and stored in the associated shared state.
+For any executor type \tcode{E}, the associated object for the associator \tcode{associated_executor<H, E>} is an executor where, for function objects executed using the executor's \tcode{execute()} function, any exception thrown is caught by a function object and stored in the associated shared state.
 \end{itemdescr}
 
 
@@ -2834,10 +2834,10 @@ Let \tcode{R} be the type \tcode{async_result<use_future_t<ProtoAllocator>, Resu
 An object \tcode{t1} of type \tcode{F} is an asynchronous provider with an associated shared state (\CppXref{futures.state}). The type \tcode{F} provides \tcode{F::operator()} such that the expression \tcode{t1(declval<Args>()...)} is well formed.
 
 \pnum
-The implementation specializes \tcode{associated_executor} for \tcode{F}. For function objects executed using the associated executor's \tcode{dispatch()}, \tcode{post()} or \tcode{defer()} functions, any exception thrown is caught by the executor and stored in the associated shared state.
+The implementation specializes \tcode{associated_executor} for \tcode{F}. For function objects executed using the associated executor's \tcode{execute()} function, any exception thrown is caught by the executor and stored in the associated shared state.
 
 \pnum
-For any executor type \tcode{E}, the associated object for the associator \tcode{associated_executor<F, E>} is an executor where, for function objects executed using the executor's \tcode{dispatch()}, \tcode{post()} or \tcode{defer()} functions, any exception thrown by a function object is caught by the executor and stored in the associated shared state.
+For any executor type \tcode{E}, the associated object for the associator \tcode{associated_executor<F, E>} is an executor where, for function objects executed using the executor's \tcode{execute()} function, any exception thrown by a function object is caught by the executor and stored in the associated shared state.
 
 \pnum
 When an object \tcode{r1} of type \tcode{R} is constructed from \tcode{t1}, the expression \tcode{r1.get()} returns a future with the same shared state as \tcode{t1}.
